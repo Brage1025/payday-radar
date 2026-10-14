@@ -69,6 +69,7 @@ def generate(
 
     # Inject two duplicate invoices among the most recent ones (ground truth for the demo).
     recent = invoices[invoices["issue_date"] >= as_of_ts - pd.Timedelta(days=60)]
+    dups = []
     for idx in rng.choice(recent.index, size=min(2, len(recent)), replace=False):
         n += 1
         dup = invoices.loc[idx].copy()
@@ -77,7 +78,9 @@ def generate(
         dup["due_date"] = dup["due_date"] + pd.Timedelta(days=2)
         dup["paid_date"] = pd.NaT
         dup["injected_duplicate"] = True
-        invoices.loc[len(invoices)] = dup
+        dups.append(dup)
+    if dups:
+        invoices = pd.concat([invoices, pd.DataFrame(dups)], ignore_index=True)
     invoices = invoices.sort_values("issue_date").reset_index(drop=True)
 
     exp_rows = []

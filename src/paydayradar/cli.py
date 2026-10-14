@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from . import synthetic
+from . import benchmark, synthetic
 from .agent import Agent
 from .pipeline import Workspace
 from .reminders import draft_reminder
@@ -76,6 +76,15 @@ def cmd_demo(args):
         print(f"\n[report written to {args.out}]")
 
 
+def cmd_benchmark(args):
+    table = benchmark.run_benchmark(seeds=args.seeds, backends=args.backends)
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(table + "\n", encoding="utf-8")
+    print(table)
+    print(f"\n[benchmark written to {out}]")
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(prog="payday-radar", description=__doc__)
     p.add_argument("--data", default="data/synthetic")
@@ -90,6 +99,11 @@ def main(argv=None) -> int:
     sub.add_parser("anomalies").set_defaults(fn=cmd_anomalies)
     a = sub.add_parser("ask"); a.add_argument("question", nargs="+"); a.set_defaults(fn=cmd_ask)
     d = sub.add_parser("demo"); d.add_argument("--out"); d.set_defaults(fn=cmd_demo)
+    b = sub.add_parser("benchmark")
+    b.add_argument("--seeds", type=int, default=3)
+    b.add_argument("--backends", default="sklearn,tabpfn-api")
+    b.add_argument("--out", default="docs/RESULTS.md")
+    b.set_defaults(fn=cmd_benchmark)
     args = p.parse_args(argv)
     args.fn(args)
     return 0
