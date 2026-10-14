@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "payday-radar"
+version = "0.1.0"
+description = "Local-first cash-flow radar for freelancers: open-weight extraction + TabPFN late-payment prediction."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["pandas>=2.0", "numpy>=1.24", "scikit-learn>=1.3"]
+
+[project.optional-dependencies]
+tabpfn-api = ["tabpfn-client"]   # hosted TabPFN-3.5 (needs TABPFN_TOKEN)
+tabpfn-local = ["tabpfn"]        # local weights, can run fully offline
+ui = ["streamlit>=1.30"]
+dev = ["pytest>=7", "ruff>=0.5"]
+
+[project.scripts]
+payday-radar = "paydayradar.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]
+ignore = ["E501", "E702", "E731", "B905"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,2 @@
+# Quickest start: pip install -r requirements.txt
+-e .[dev]

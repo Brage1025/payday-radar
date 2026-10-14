@@ -1,0 +1,28 @@
+# Weekly automated "radar" run on the synthetic dataset; swap in a real data path for your own use.
+# Set repository secret TABPFN_TOKEN to use hosted TabPFN-3.5; otherwise it falls back to sklearn.
+name: weekly-radar
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -e ".[tabpfn-api]"
+      - name: Build report
+        env:
+          TABPFN_TOKEN: ${{ secrets.TABPFN_TOKEN }}
+        run: python -m paydayradar demo --out report.md
+      - name: Publish to job summary
+        run: cat report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: radar-report
+          path: report.md
