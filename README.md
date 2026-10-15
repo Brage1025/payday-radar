@@ -1,4 +1,4 @@
-# 📡 Payday Radar
+# Payday Radar
 
 [![ci](https://github.com/Brage1025/payday-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/Brage1025/payday-radar/actions/workflows/ci.yml)
 
