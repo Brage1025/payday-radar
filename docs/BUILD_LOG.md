@@ -37,16 +37,20 @@ example, the first run of the privacy test and the first benchmark run hit envir
 
 Rename rows if your filenames differ.
 
-| #   | File                               | Shows                                                         |
-| --- | ---------------------------------- | ------------------------------------------------------------- |
-| 01  | 01-copilot-code-review-ruleset.png | Branch ruleset requiring PRs                                  |
-| 02  | 02-issues-list.png                 | The 12 scoped issues                                          |
-| 03  | 03-copilot-cli-session.png         | Copilot CLI on the privacy audit test                         |
-| 04  | 04-copilot-cli-pr.png              | The resulting PR                                              |
-| 05  | 05-copilot-cli-benchmark.png       | Copilot CLI on the benchmark                                  |
-| 06  | 06-benchmark-results.png           | TabPFN vs scikit-learn table                                  |
-| 07  | 07-copilot-cli-mcp-server.png      | Copilot CLI on the MCP server                                 |
-| 08  | 08-mcp-client-demo.png             | Separate MCP client calling the server                        |
-| 09a | 09a-mcp-tabpfn-run-top.png         | Same demo on the tabpfn-api backend (command and first tools) |
-| 09b | 09b-mcp-tabpfn-run-bottom.png      | Same run, last tools and the leak check passing               |
-| 10  | 10-actions-all-green.png           | CI and workflows passing                                      |
+| #   | File                               | Shows                                                                                     |
+| --- | ---------------------------------- | ----------------------------------------------------------------------------------------- |
+| 01  | 01-copilot-code-review-ruleset.png | Branch ruleset requiring PRs                                                              |
+| 02  | 02-issues-list.png                 | The 12 scoped issues                                                                      |
+| 03  | 03-copilot-cli-session.png         | Copilot CLI on the privacy audit test                                                     |
+| 04  | 04-copilot-cli-pr.png              | The resulting PR                                                                          |
+| 05  | 05-copilot-cli-benchmark.png       | Copilot CLI on the benchmark                                                              |
+| 06  | 06-benchmark-results.png           | TabPFN vs scikit-learn table                                                              |
+| 07  | 07-copilot-cli-mcp-server.png      | Copilot CLI on the MCP server                                                             |
+| 08  | 08-mcp-client-demo.png             | Separate MCP client calling the server                                                    |
+| 09a | 09a-mcp-tabpfn-run-top.png         | Same demo on the tabpfn-api backend (command and first tools)                             |
+| 09b | 09b-mcp-tabpfn-run-bottom.png      | Same run, last tools and the leak check passing                                           |
+| 10  | 10-actions-all-green.png           | CI and workflows passing                                                                  |
+| 11  | 11-copilot-cli-intervals-core.png  | Copilot CLI implementing quantile helper and Monte Carlo forecast                         |
+| 12  | 12-copilot-cli-intervals-agent.png | Copilot CLI wiring intervals into agent, MCP and CLI                                      |
+| 13  | 13-tabpfn-intervals-run.png        | Real TabPFN-3.5 forecast with P10/P50/P90 and the P10-based answer                        |
+| 14  | 14-tabpfn-v35-version-check.png    | Confirms the code creates the TabPFN-3.5 regressor via create_default_for_version("v3.5") |
