@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import os
 import warnings
+from collections.abc import Sequence
 
+import numpy as np
 import pandas as pd
 
 BACKENDS = ("auto", "tabpfn-api", "tabpfn-local", "sklearn")
@@ -26,6 +28,38 @@ def ensure_numeric(X: pd.DataFrame) -> pd.DataFrame:
     if bad:
         raise PrivacyError(f"Refusing to send non-numeric columns to a model: {bad}")
     return X
+
+
+def predict_quantiles(model, X: pd.DataFrame, quantiles: Sequence[float]) -> np.ndarray:
+    """Return sorted, non-crossing predictions with shape (rows, quantiles)."""
+    X = ensure_numeric(X)
+    quantile_levels = list(quantiles)
+
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.pipeline import Pipeline
+
+    if (
+        isinstance(model, Pipeline)
+        and model.steps
+        and isinstance(model.steps[-1][1], RandomForestRegressor)
+    ):
+        forest = model.steps[-1][1]
+        transformed = model[:-1].transform(X) if len(model.steps) > 1 else X
+        tree_predictions = np.asarray(
+            [tree.predict(transformed) for tree in forest.estimators_], dtype=float
+        )
+        predictions = np.quantile(tree_predictions, quantile_levels, axis=0).T
+    else:
+        predictions = np.column_stack(
+            model.predict(X, output_type="quantiles", quantiles=quantile_levels)
+        )
+
+    expected_shape = (len(X), len(quantile_levels))
+    if predictions.shape != expected_shape:
+        raise ValueError(
+            f"Quantile predictions must have shape {expected_shape}, got {predictions.shape}"
+        )
+    return np.sort(predictions, axis=1)
 
 
 def resolve_backend(backend: str = "auto") -> str:

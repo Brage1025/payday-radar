@@ -11,7 +11,15 @@ import pandas as pd
 from sklearn.model_selection import KFold
 
 from .features import FEATURE_COLUMNS, build_features, prepare_invoices
-from .models import ensure_numeric, make_classifier, make_regressor, resolve_backend
+from .models import (
+    ensure_numeric,
+    make_classifier,
+    make_regressor,
+    predict_quantiles,
+    resolve_backend,
+)
+
+QUANTILES = [0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
 
 
 @dataclass
@@ -106,10 +114,21 @@ class Workspace:
     def _lag_row(hist: list[float], month: int, t: int) -> list[float]:
         return [month, t, hist[-1], hist[-2], hist[-3], float(np.mean(hist[-3:]))]
 
-    def _forecast_target(self, values: pd.Series, months: pd.DatetimeIndex, horizon: int):
+    def _forecast_target(
+        self,
+        values: pd.Series,
+        months: pd.DatetimeIndex,
+        horizon: int,
+        intervals: bool = False,
+    ):
         hist = list(values.astype(float))
         if len(hist) < 8:
-            return [float(np.mean(hist))] * horizon
+            out = [float(np.mean(hist))] * horizon
+            if not intervals:
+                return out
+            history_quantiles = np.quantile(hist, QUANTILES)
+            quantile_out = np.repeat(history_quantiles[np.newaxis, :], horizon, axis=0)
+            return out, quantile_out
         X, y = [], []
         for i in range(3, len(hist)):
             X.append(self._lag_row(hist[:i], values.index[i].month, i))
@@ -119,6 +138,7 @@ class Workspace:
         model = make_regressor(self.backend)
         model.fit(X, pd.Series(y))
         out = []
+        quantile_out = []
         for step in range(horizon):
             row = pd.DataFrame(
                 [self._lag_row(hist, months[step].month, len(hist))], columns=cols
@@ -126,21 +146,61 @@ class Workspace:
             pred = float(np.asarray(model.predict(row))[0])
             pred = max(pred, 0.0)
             out.append(pred)
+            if intervals:
+                quantile_pred = predict_quantiles(model, row, QUANTILES)[0]
+                quantile_out.append(np.maximum(quantile_pred, 0.0))
             hist.append(pred)
-        return out
+        return (out, np.asarray(quantile_out, dtype=float)) if intervals else out
 
-    def forecast(self, months: int = 3) -> pd.DataFrame:
-        """Recursive monthly income/expense forecast with a running balance."""
-        key = ("forecast", months)
+    def forecast(
+        self, months: int = 3, intervals: bool = False, n_sims: int = 2000, seed: int = 0
+    ) -> pd.DataFrame:
+        """Forecast cash flow; optional intervals assume independent months and truncate tails.
+
+        Interval simulations treat income and expenses as independent across months and targets,
+        using sampled quantiles only between the 5th and 95th percentiles.
+        """
+        key = ("forecast", months, intervals, n_sims, seed)
         if key in self._cache:
             return self._cache[key]
         series = self.monthly_series()
         future = pd.date_range(self.as_of.to_period("M").to_timestamp(), periods=months, freq="MS")
-        inc = self._forecast_target(series["income"], future, months)
-        exp = self._forecast_target(series["expenses"], future, months)
+        if intervals:
+            inc, inc_quantiles = self._forecast_target(
+                series["income"], future, months, intervals=True
+            )
+            exp, exp_quantiles = self._forecast_target(
+                series["expenses"], future, months, intervals=True
+            )
+        else:
+            inc = self._forecast_target(series["income"], future, months)
+            exp = self._forecast_target(series["expenses"], future, months)
         df = pd.DataFrame({"month": future, "forecast_income": inc, "forecast_expenses": exp})
         df["net"] = df["forecast_income"] - df["forecast_expenses"]
         df["balance"] = self.opening_balance + df["net"].cumsum()
+        if intervals:
+            rng = np.random.default_rng(seed)
+            income_draws = rng.uniform(0.05, 0.95, size=(n_sims, months))
+            expense_draws = rng.uniform(0.05, 0.95, size=(n_sims, months))
+            simulated_income = np.column_stack(
+                [
+                    np.interp(income_draws[:, step], QUANTILES, inc_quantiles[step])
+                    for step in range(months)
+                ]
+            )
+            simulated_expenses = np.column_stack(
+                [
+                    np.interp(expense_draws[:, step], QUANTILES, exp_quantiles[step])
+                    for step in range(months)
+                ]
+            )
+            balance_paths = self.opening_balance + np.cumsum(
+                simulated_income - simulated_expenses, axis=1
+            )
+            p10, p50, p90 = np.percentile(balance_paths, [10, 50, 90], axis=0)
+            df["balance_p10"] = p10
+            df["balance_p50"] = p50
+            df["balance_p90"] = p90
         num = df.columns.drop("month")
         df[num] = df[num].round(0)
         self._cache[key] = df
