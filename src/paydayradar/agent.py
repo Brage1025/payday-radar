@@ -27,11 +27,14 @@ TOOL_SPECS = [
         "parameters": {"type": "object", "properties": {"top_n": {"type": "integer"}}}}},
     {"type": "function", "function": {
         "name": "cashflow_forecast", "description": "Monthly income/expense/balance forecast.",
-        "parameters": {"type": "object", "properties": {"months": {"type": "integer"}}}}},
+        "parameters": {"type": "object", "properties": {
+            "months": {"type": "integer"}, "intervals": {"type": "boolean"}}}}},
     {"type": "function", "function": {
-        "name": "can_afford", "description": "Can the user spend an amount now and stay solvent?",
+        "name": "can_afford",
+        "description": "Check affordability using a pessimistic P10 balance scenario.",
         "parameters": {"type": "object", "required": ["amount"], "properties": {
-            "amount": {"type": "number"}, "within_days": {"type": "integer"}}}}},
+            "amount": {"type": "number"}, "within_days": {"type": "integer"},
+            "use_intervals": {"type": "boolean"}}}}},
     {"type": "function", "function": {
         "name": "draft_reminder", "description": "Draft a payment reminder for an invoice id.",
         "parameters": {"type": "object", "required": ["invoice_id"], "properties": {
@@ -61,15 +64,29 @@ class Agent:
             expected_pay_date=df["expected_pay_date"].dt.strftime("%Y-%m-%d"),
         ).to_json(orient="records"))
 
-    def cashflow_forecast(self, months: int = 3) -> list[dict]:
-        df = self.ws.forecast(int(months))
+    def cashflow_forecast(self, months: int = 3, intervals: bool = False) -> list[dict]:
+        df = self.ws.forecast(int(months), intervals=intervals)
         return json.loads(df.assign(month=df["month"].dt.strftime("%Y-%m")).to_json(orient="records"))
 
-    def can_afford(self, amount: float, within_days: int = 90) -> dict:
+    def can_afford(
+        self, amount: float, within_days: int = 90, use_intervals: bool = True
+    ) -> dict:
         months = min(max(math.ceil(int(within_days) / 30), 1), 6)
-        fc = self.ws.forecast(months)
-        lowest = float(fc["balance"].min()) - float(amount)
+        fc = self.ws.forecast(months, intervals=use_intervals)
         cushion = float(fc["forecast_expenses"].mean())  # one month of costs
+        if use_intervals:
+            lowest_p10 = float(fc["balance_p10"].min()) - float(amount)
+            lowest_p50 = float(fc["balance_p50"].min()) - float(amount)
+            verdict = "yes" if lowest_p10 >= cushion else "tight" if lowest_p10 >= 0 else "no"
+            return {
+                "verdict": verdict,
+                "basis": "P10: a 1-in-10 pessimistic scenario",
+                "lowest_p10_balance_after_purchase": round(lowest_p10),
+                "lowest_p50_balance_after_purchase": round(lowest_p50),
+                "one_month_cushion": round(cushion),
+                "horizon_months": months,
+            }
+        lowest = float(fc["balance"].min()) - float(amount)
         verdict = "yes" if lowest >= cushion else "tight" if lowest >= 0 else "no"
         return {"verdict": verdict, "lowest_projected_balance_after_purchase": round(lowest),
                 "one_month_cushion": round(cushion), "horizon_months": months}
