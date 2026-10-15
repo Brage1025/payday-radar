@@ -89,6 +89,63 @@ ollama pull qwen2.5:7b     # agent chat + reminder polish (supports tool calling
 Override with `PAYDAY_VISION_MODEL` / `PAYDAY_TEXT_MODEL`. With Ollama stopped, the agent falls
 back to a keyword router and reminders use plain templates, so the demo always works.
 
+## Use as an MCP server
+
+Install the optional MCP SDK and start Payday Radar over stdio:
+
+```bash
+pip install -e ".[mcp]"
+python -m paydayradar --data data/synthetic --backend sklearn mcp --redact
+```
+
+Claude Desktop configuration (replace the paths with your local checkout and data directory):
+
+```json
+{
+  "mcpServers": {
+    "payday-radar": {
+      "command": "python",
+      "args": [
+        "-m",
+        "paydayradar",
+        "--data",
+        "C:\\Users\\MeB10\\Desktop\\payday-radar\\data\\synthetic",
+        "--backend",
+        "tabpfn-api",
+        "mcp",
+        "--redact"
+      ],
+      "env": { "TABPFN_TOKEN": "your-key-here" }
+    }
+  }
+}
+```
+
+Generic MCP client configuration:
+
+```json
+{
+  "command": "python",
+  "args": [
+    "-m",
+    "paydayradar",
+    "--data",
+    "data/synthetic",
+    "--backend",
+    "sklearn",
+    "mcp",
+    "--redact"
+  ]
+}
+```
+
+Tool outputs contain client and vendor names unless `--redact` is used. Connecting a cloud LLM
+client can therefore send those names to that provider; use `--redact` when connecting one.
+
+MCP clients start servers with a minimal environment. To use TabPFN, pass the key in the
+client's config (for example `"env": { "TABPFN_TOKEN": "your-key" }`) and keep that config
+file out of version control.
+
 ## Privacy model
 
 - Client names and any free text are used only for local look-ups.

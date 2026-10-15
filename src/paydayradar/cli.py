@@ -19,12 +19,13 @@ def _fmt(df: pd.DataFrame) -> str:
     return df.to_string(index=False)
 
 
-def _workspace(args) -> Workspace:
+def _workspace(args, *, announce: bool = True) -> Workspace:
     data = Path(args.data)
     if not (data / "invoices.csv").exists():
         inv, exp = synthetic.generate(seed=args.seed)
         synthetic.save(inv, exp, data)
-        print(f"[generated synthetic data in {data}/]")
+        if announce:
+            print(f"[generated synthetic data in {data}/]")
     return Workspace.from_dir(data, backend=args.backend)
 
 
@@ -56,6 +57,12 @@ def cmd_anomalies(args):
 
 def cmd_ask(args):
     print(Agent(_workspace(args)).ask(" ".join(args.question)))
+
+
+def cmd_mcp(args):
+    from .mcp_server import build_server
+
+    build_server(_workspace(args, announce=False), redact=args.redact).run(transport="stdio")
 
 
 def cmd_demo(args):
@@ -98,6 +105,13 @@ def main(argv=None) -> int:
     f.set_defaults(fn=cmd_forecast)
     sub.add_parser("anomalies").set_defaults(fn=cmd_anomalies)
     a = sub.add_parser("ask"); a.add_argument("question", nargs="+"); a.set_defaults(fn=cmd_ask)
+    m = sub.add_parser("mcp")
+    m.add_argument("--data", default=argparse.SUPPRESS)
+    m.add_argument("--backend", choices=["auto", "tabpfn-api", "tabpfn-local", "sklearn"],
+                   default=argparse.SUPPRESS)
+    m.add_argument("--redact", action="store_true",
+                   help="replace client and vendor names in tool outputs with aliases")
+    m.set_defaults(fn=cmd_mcp)
     d = sub.add_parser("demo"); d.add_argument("--out"); d.set_defaults(fn=cmd_demo)
     b = sub.add_parser("benchmark")
     b.add_argument("--seeds", type=int, default=3)
