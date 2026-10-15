@@ -1,4 +1,4 @@
-# 📡 Payday Radar
+# Payday Radar
 
 **See late payments coming before they hurt.** A local-first cash-flow radar for freelancers
 and tiny agencies: it reads your invoices, predicts which ones will be paid late, forecasts the
