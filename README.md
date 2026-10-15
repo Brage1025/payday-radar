@@ -11,6 +11,12 @@ exposed to any AI agent through an **MCP server**.
 Built for the Hacktoberfest Open-Source AI Challenge (Week 2: Side Hustle), competing for the
 **Best Use of TabPFN** and **Best Use of GitHub Copilot**.
 
+## Demo video
+
+[![Payday Radar demo video](https://img.youtube.com/vi/FQ7_4DeTln8/hqdefault.jpg)](https://youtu.be/FQ7_4DeTln8)
+
+All data in the video is synthetic. Note that TabPFN-3.5 is licensed for non-commercial use only.
+
 ![TabPFN-3.5 forecast with P10/P50/P90 scenarios and a P10-based answer](docs/screenshots/13-tabpfn-intervals-run.png)
 
 ## What it does
