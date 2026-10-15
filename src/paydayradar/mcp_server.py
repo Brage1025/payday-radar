@@ -65,13 +65,15 @@ def build_server(ws: Workspace, redact: bool = False) -> MCPServer:
         return serialize(agent.risky_invoices(top_n=_clamp(top_n, 1, 50)))
 
     @server.tool()
-    def cashflow_forecast(months: int = 3) -> str:
-        """Forecast monthly income, expenses, net cash flow, and balance for the requested months."""
-        return serialize(agent.cashflow_forecast(months=_clamp(months, 1, 12)))
+    def cashflow_forecast(months: int = 3, intervals: bool = False) -> str:
+        """Forecast monthly cash flow; P10 is a pessimistic scenario, P50 median, P90 optimistic."""
+        return serialize(
+            agent.cashflow_forecast(months=_clamp(months, 1, 12), intervals=intervals)
+        )
 
     @server.tool()
     def can_afford(amount: float, within_days: int = 90) -> str:
-        """Check whether spending an amount in NOK leaves a safe cash cushion over the time horizon."""
+        """Check affordability using a pessimistic P10 balance scenario and cash cushion."""
         return serialize(agent.can_afford(amount=amount, within_days=within_days))
 
     @server.tool()

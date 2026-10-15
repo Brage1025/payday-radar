@@ -57,6 +57,15 @@ def test_mcp_tools(mcp_workspace):
     assert set(_tool_outputs(server, mcp_workspace)) == {tool.name for tool in tools}
 
 
+def test_mcp_cashflow_forecast_intervals(mcp_workspace):
+    server = build_server(mcp_workspace)
+
+    result = asyncio.run(server.call_tool("cashflow_forecast", {"months": 3, "intervals": True}))
+    forecast = json.loads(result.content[0].text)
+
+    assert all("balance_p10" in month for month in forecast)
+
+
 def test_mcp_redacts_client_and_vendor_names(mcp_workspace):
     real_names = set(mcp_workspace.invoices["client"]) | set(mcp_workspace.expenses["vendor"])
     plain = "\n".join(_tool_outputs(build_server(mcp_workspace), mcp_workspace).values())

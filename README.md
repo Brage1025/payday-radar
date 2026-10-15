@@ -36,6 +36,17 @@ TabPFN does three jobs: **classification** (will this invoice be late?), **regre
 (predict the expected expense amount, flag big residuals). They are wrapped as tools in a small
 agent so you can ask questions in plain language.
 
+## Risk-aware answers
+
+Forecast intervals show P10, P50 and P90 balance paths: respectively a pessimistic 1-in-10
+scenario, the median, and an optimistic 1-in-10 scenario. TabPFN intervals come from its
+predictive distribution's quantile output; the scikit-learn fallback approximates that spread
+using the distribution of predictions across random forest trees. Simulations assume income and
+expenses are independent across targets and months, and truncate the sampled distribution to the
+5th–95th percentile range. Use `forecast --intervals` to print these columns. The affordability
+answer uses the P10 path by default. The verdict uses the lowest of the monthly P10 balances,
+which is slightly optimistic: the chance of dipping below that level in at least one month is a little above 10%
+
 ## Quickstart (no token, no GPU, no Ollama)
 
 ```bash
@@ -160,8 +171,10 @@ commercial license, or ship the paid tier with a different approach for the pred
 This code is MIT.
 
 ## Built with GitHub Copilot
+
 Built on the Copilot **Free** plan, so I used **Copilot CLI** and **GitHub Actions**; the paid
 coding agent and automatic PR review were not available.
+
 - `.github/copilot-instructions.md` steers Copilot CLI (privacy rules, offline tests).
 - Features were drafted with Copilot CLI on feature branches, then reviewed and verified by hand:
   the privacy audit test, the TabPFN benchmark and the MCP server.

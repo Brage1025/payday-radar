@@ -44,7 +44,9 @@ def cmd_score(args):
 def cmd_forecast(args):
     ws = _workspace(args)
     print(f"Backend: {ws.backend}\n")
-    print(_fmt(ws.forecast(args.months).assign(month=lambda d: d["month"].dt.strftime("%Y-%m"))))
+    print(_fmt(ws.forecast(args.months, intervals=args.intervals).assign(
+        month=lambda d: d["month"].dt.strftime("%Y-%m")
+    )))
 
 
 def cmd_anomalies(args):
@@ -102,6 +104,8 @@ def main(argv=None) -> int:
     sub.add_parser("generate").set_defaults(fn=cmd_generate)
     sub.add_parser("score").set_defaults(fn=cmd_score)
     f = sub.add_parser("forecast"); f.add_argument("--months", type=int, default=3)
+    f.add_argument("--intervals", action="store_true",
+                   help="include P10/P50/P90 balance scenarios")
     f.set_defaults(fn=cmd_forecast)
     sub.add_parser("anomalies").set_defaults(fn=cmd_anomalies)
     a = sub.add_parser("ask"); a.add_argument("question", nargs="+"); a.set_defaults(fn=cmd_ask)

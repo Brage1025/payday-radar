@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from paydayradar import pipeline
+from paydayradar.agent import Agent
 from paydayradar.models import make_regressor, predict_quantiles
 
 
@@ -75,3 +77,53 @@ def test_forecast_intervals_are_ordered_unchanged_and_deterministic(ws):
     assert (with_intervals["balance_p50"] <= with_intervals["balance_p90"]).all()
     pd.testing.assert_frame_equal(with_intervals[forecast.columns], forecast)
     pd.testing.assert_frame_equal(with_intervals, repeated)
+
+
+def test_can_afford_uses_p10_and_preserves_legacy_output_when_disabled(ws):
+    agent = Agent(ws)
+
+    with_intervals = agent.can_afford(12_000)
+    without_intervals = agent.can_afford(12_000, use_intervals=False)
+
+    assert "P10" in with_intervals["basis"]
+    assert set(with_intervals) == {
+        "verdict",
+        "basis",
+        "lowest_p10_balance_after_purchase",
+        "lowest_p50_balance_after_purchase",
+        "one_month_cushion",
+        "horizon_months",
+    }
+    assert set(without_intervals) == {
+        "verdict",
+        "lowest_projected_balance_after_purchase",
+        "one_month_cushion",
+        "horizon_months",
+    }
+
+
+def test_degenerate_quantile_distribution_matches_point_balance(ws, monkeypatch):
+    class ConstantRegressor:
+        def fit(self, X, y):
+            self.value = float(np.mean(y))
+            return self
+
+        def predict(self, X, output_type=None, quantiles=None):
+            if output_type == "quantiles":
+                return [np.full(len(X), self.value) for _ in quantiles]
+            return np.full(len(X), self.value)
+
+    monkeypatch.setattr(pipeline, "make_regressor", lambda backend: ConstantRegressor())
+    fresh_ws = pipeline.Workspace(
+        ws.invoices.copy(),
+        ws.expenses.copy(),
+        as_of=ws.as_of,
+        opening_balance=ws.opening_balance,
+        backend="sklearn",
+    )
+
+    forecast = fresh_ws.forecast(3, intervals=True)
+
+    np.testing.assert_array_equal(forecast["balance_p10"], forecast["balance"])
+    np.testing.assert_array_equal(forecast["balance_p50"], forecast["balance"])
+    np.testing.assert_array_equal(forecast["balance_p90"], forecast["balance"])
