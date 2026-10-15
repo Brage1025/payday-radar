@@ -83,8 +83,9 @@ class Agent:
 
     def anomalies(self) -> dict:
         res = self.ws.find_anomalies()
-        return {"unusual_expenses": json.loads(res["expenses"].assign(
-                    date=res["expenses"]["date"].dt.strftime("%Y-%m-%d")).to_json(orient="records")),
+        flagged = res["expenses"].drop(columns=["is_anomaly"], errors="ignore")
+        return {"unusual_expenses": json.loads(flagged.assign(
+                    date=flagged["date"].dt.strftime("%Y-%m-%d")).to_json(orient="records")),
                 "duplicate_invoices": json.loads(res["duplicates"].assign(
                     issue_date=res["duplicates"]["issue_date"].dt.strftime("%Y-%m-%d")
                 ).to_json(orient="records"))}

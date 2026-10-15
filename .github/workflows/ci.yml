@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,mcp]"
       - run: ruff check .
       - run: pytest -q
       - name: End-to-end demo on synthetic data (offline backend)
