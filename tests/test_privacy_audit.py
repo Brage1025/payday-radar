@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 from pandas.api.types import is_numeric_dtype
 
-from paydayradar import pipeline, synthetic
+from paydayradar import models, pipeline, synthetic
 from paydayradar.models import make_classifier as real_classifier
 from paydayradar.models import make_regressor as real_regressor
 
@@ -41,8 +41,10 @@ class RecordingEstimator:
             self.classes_ = self.estimator.classes_
         return self
 
-    def predict(self, X):
-        self._check(X, "predict")
+    def predict(self, X, output_type=None, quantiles=None):
+        self._check(X, "predict_quantiles" if output_type == "quantiles" else "predict")
+        if output_type == "quantiles":
+            return list(models.predict_quantiles(self.estimator, X, quantiles).T)
         return self.estimator.predict(X)
 
     def predict_proba(self, X):
@@ -70,6 +72,7 @@ def test_pipeline_model_inputs_contain_no_client_or_vendor_names(monkeypatch, da
     )
     ws.score_open_invoices()
     ws.forecast(3)
+    ws.forecast(3, intervals=True)
     ws.find_anomalies()
 
     assert ("classifier", "fit") in log and ("classifier", "predict_proba") in log
