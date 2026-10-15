@@ -160,13 +160,13 @@ commercial license, or ship the paid tier with a different approach for the pred
 This code is MIT.
 
 ## Built with GitHub Copilot
-
-- `.github/copilot-instructions.md` gives the coding agent the project's rules (privacy, offline tests).
-- `scripts/create_issues.sh --assign-copilot` files 12 scoped issues (`docs/issues/`) for the coding agent.
-- CI (`ci.yml`), `copilot-setup-steps.yml`, and a weekly report Action (`weekly-radar.yml`) automate the project.
-- Enable **automatic Copilot code review** on PRs: repo Settings → Rules → Rulesets → add
-  "Automatically request Copilot code review".
-- Track what Copilot did vs. what you fixed in `docs/BUILD_LOG.md`.
+Built on the Copilot **Free** plan, so I used **Copilot CLI** and **GitHub Actions**; the paid
+coding agent and automatic PR review were not available.
+- `.github/copilot-instructions.md` steers Copilot CLI (privacy rules, offline tests).
+- Features were drafted with Copilot CLI on feature branches, then reviewed and verified by hand:
+  the privacy audit test, the TabPFN benchmark and the MCP server.
+- Actions: CI (`ci.yml`), agent setup (`copilot-setup-steps.yml`) and a weekly report (`weekly-radar.yml`).
+- Full attribution, including what Copilot got wrong: `docs/BUILD_LOG.md`.
 
 ## Roadmap
 
